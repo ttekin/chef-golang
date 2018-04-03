@@ -37,6 +37,7 @@ type Chef struct {
 	UserId       string
 	SSLNoVerify  bool
 	Organization string
+	Timeout      time.Duration
 }
 
 // Connect looks for knife/chef configuration files and gather connection info
@@ -302,15 +303,13 @@ func (chef *Chef) requestUrl(endpoint string) string {
 // Take a request object, Setup Auth headers and Send it to the server
 func (chef *Chef) makeRequest(request *http.Request) (*http.Response, error) {
 	chef.apiRequestHeaders(request)
-	var client *http.Client
-	if chef.SSLNoVerify {
-		tr := &http.Transport{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-		client = &http.Client{Transport: tr}
-	} else {
-		client = &http.Client{}
+	tr := &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: chef.SSLNoVerify},
+	}
+	client := &http.Client{
+		Transport: tr,
+		Timeout: chef.Timeout,
 	}
 
 	return client.Do(request)
